@@ -44,9 +44,6 @@
     .sbtn .tl{font-size:9px;color:#94A3B8;line-height:1.4;margin-top:3px;padding-left:24px}
     .sbtn .rw{display:flex;align-items:center;gap:7px}
 
-    .oqs{margin:14px 4px 0;padding:12px;border-radius:10px;background:#FFF1F2;border:1px solid #FECDD3}
-    .oqs h4{font-size:9px;font-weight:700;color:#BE123C;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
-    .oqs p{font-size:9px;color:#E11D48;line-height:1.5;margin-bottom:1px}
 
     /* ── Main canvas ── */
     .canvas{flex:1;overflow:auto;padding:28px 24px;background:#F8FAFC;background-image:radial-gradient(circle,#E2E8F0 .7px,transparent .7px);background-size:20px 20px}
@@ -364,12 +361,6 @@
                   <div className="tl">{s.tag}</div>
                 </button>
               ))}
-              <div className="oqs">
-                <h4>Open Questions for Gareth</h4>
-                {['Scoreboard for non-tournament rounds?','Clippd Lite ↔ existing accounts?','Support 9-hole rounds in V1?','App poll for new rounds vs email only?','36-hole days — one or two emails?','Manual tournament grouping in V1?','Memory cutoff for shot-by-shot?'].map((q,i)=>(
-                  <p key={i}>{i+1}. {q}</p>
-                ))}
-              </div>
             </div>
             <div className="canvas" ref={ref}>
               {active&&(
