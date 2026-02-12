@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clippd Lite — Decision Tree</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased}
+    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:#F1F5F9;color:#1E293B}
+    ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:3px}
+
+    @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+    .layout{display:flex;height:100vh;flex-direction:column}
+
+    /* ── Header ── */
+    .hdr{background:#FFF;border-bottom:1px solid #E2E8F0;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+    .hdr h1{font-size:14px;font-weight:800;color:#0F172A;letter-spacing:-0.3px}
+    .hdr p{font-size:11px;color:#94A3B8;margin-top:1px}
+    .legend{display:flex;align-items:center;gap:14px}
+    .legend-i{display:flex;align-items:center;gap:5px;font-size:10px;color:#64748B;font-weight:500}
+    .legend-d{width:9px;height:9px;border-radius:3px}
+    .tog-btn{background:#F1F5F9;border:1px solid #E2E8F0;border-radius:8px;padding:5px 12px;font-size:10px;font-weight:600;color:#64748B;cursor:pointer;font-family:inherit;margin-left:16px;transition:all .15s}
+    .tog-btn:hover{background:#E2E8F0}
+    .tog-btn.on{background:#EFF6FF;border-color:#93C5FD;color:#2563EB}
+
+    /* ── Body ── */
+    .bod{display:flex;flex:1;overflow:hidden}
+
+    /* ── Sidebar ── */
+    .side{width:250px;background:#FFF;border-right:1px solid #F1F5F9;overflow-y:auto;flex-shrink:0;padding:14px}
+    .side-lbl{font-size:9px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:.8px;padding:0 8px;margin-bottom:6px}
+    .sbtn{width:100%;text-align:left;border:2px solid transparent;border-radius:10px;padding:10px;margin-bottom:3px;cursor:pointer;background:transparent;transition:all .15s;font-family:inherit}
+    .sbtn:hover{background:#F8FAFC}
+    .sbtn.on{border-color:var(--sc)}
+    .sbtn .ic{font-size:14px}.sbtn .lb{font-size:11px;font-weight:700;color:#475569}
+    .sbtn.on .lb{color:var(--sc)}
+    .sbtn .tl{font-size:9px;color:#94A3B8;line-height:1.4;margin-top:3px;padding-left:24px}
+    .sbtn .rw{display:flex;align-items:center;gap:7px}
+
+    .oqs{margin:14px 4px 0;padding:12px;border-radius:10px;background:#FFF1F2;border:1px solid #FECDD3}
+    .oqs h4{font-size:9px;font-weight:700;color:#BE123C;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+    .oqs p{font-size:9px;color:#E11D48;line-height:1.5;margin-bottom:1px}
+
+    /* ── Main canvas ── */
+    .canvas{flex:1;overflow:auto;padding:28px 24px;background:#F8FAFC;background-image:radial-gradient(circle,#E2E8F0 .7px,transparent .7px);background-size:20px 20px}
+
+    /* ── Flowchart ── */
+    .flow{display:flex;flex-direction:column;align-items:center;max-width:720px;margin:0 auto;padding-bottom:40px}
+
+    /* ── Scenario banner ── */
+    .sc-ban{width:100%;max-width:400px;border-radius:14px;padding:16px 20px;margin-bottom:20px;border:2px solid;display:flex;align-items:center;gap:14px;background:#FFF;animation:fadeIn .3s ease-out}
+    .sc-ban .ic{font-size:24px;flex-shrink:0}
+    .sc-ban h2{font-size:15px;font-weight:800;letter-spacing:-.2px}
+    .sc-ban p{font-size:11px;color:#64748B;line-height:1.5;margin-top:2px}
+
+    /* ── Flow Node ── */
+    .fn{width:320px;padding:10px 14px;border-radius:10px;border:2px solid;display:flex;align-items:flex-start;gap:10px;background:#FFF;position:relative;cursor:default;transition:box-shadow .15s;animation:fadeIn .3s ease-out both}
+    .fn:hover{box-shadow:0 3px 14px rgba(0,0,0,.07)}
+    .fn-ic{font-size:15px;flex-shrink:0;margin-top:1px}
+    .fn-body{flex:1;min-width:0}
+    .fn-t{font-size:11.5px;font-weight:700;color:#1E293B;line-height:1.3}
+    .fn-d{font-size:10px;color:#64748B;line-height:1.45;margin-top:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .fn-d.hide{display:none}
+    .fn-badge{padding:2px 7px;border-radius:5px;font-size:9px;font-weight:700;color:#FFF;flex-shrink:0;white-space:nowrap;margin-top:1px}
+    .fn-cta{margin-top:4px;font-size:9px;color:#475569;font-weight:600;font-style:italic}
+    .fn-callout{margin-top:5px;font-size:9px;color:#92400E;background:#FFFBEB;padding:3px 8px;border-radius:5px;border:1px solid #FDE68A;line-height:1.4}
+
+    /* Node types */
+    .fn-entry{background:#F0FDF4;border-color:#86EFAC}.fn-entry .fn-t{color:#166534}
+    .fn-action{background:#FFF;border-color:#E2E8F0}
+    .fn-screen{border-width:2px}
+    .fn-screen[data-level="L1"]{background:#F8FAFC;border-color:#CBD5E1}
+    .fn-screen[data-level="L2"]{background:#EFF6FF;border-color:#93C5FD}
+    .fn-screen[data-level="L3"]{background:#FFFBEB;border-color:#FCD34D}
+    .fn-decision{background:#F5F3FF;border-color:#C4B5FD}.fn-decision .fn-t{color:#5B21B6}
+    .fn-skip{background:#FEF2F2;border-color:#FECACA;border-style:dashed}.fn-skip .fn-t{color:#991B1B}.fn-skip .fn-d{color:#B91C1C}
+    .fn-nudge{background:#FFFBEB;border-color:#FDE68A}.fn-nudge .fn-t{color:#92400E}
+    .fn-outcome{background:#ECFDF5;border-color:#6EE7B7;border-width:3px}.fn-outcome .fn-t{color:#065F46}
+
+    /* ── Connectors ── */
+    .conn{display:flex;flex-direction:column;align-items:center}
+    .conn-line{width:2px;height:22px;background:#CBD5E1}
+    .conn-line.short{height:12px}
+    .conn-line.dash{background:repeating-linear-gradient(to bottom,#FECACA 0,#FECACA 3px,transparent 3px,transparent 6px)}
+    .conn-line.purple{background:#C4B5FD}
+    .conn-arr{width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid #CBD5E1;margin-top:-1px}
+    .conn-arr.purple{border-top-color:#C4B5FD}
+
+    /* ── Branch row ── */
+    .branch{display:flex;flex-direction:column;align-items:center;width:100%;animation:fadeIn .3s ease-out both}
+    .br-row{display:flex;justify-content:center;position:relative;padding-top:16px}
+    .br-col{display:flex;flex-direction:column;align-items:center;padding:0 6px;position:relative}
+    /* Horizontal bar */
+    .br-col::before{content:'';position:absolute;top:0;left:0;right:0;border-top:2px solid #C4B5FD}
+    .br-col:first-child::before{left:50%}
+    .br-col:last-child::before{right:50%}
+    /* Vertical stub */
+    .br-col::after{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:2px;height:16px;background:#C4B5FD}
+    /* Pill */
+    .br-pill{margin-top:16px;padding:7px 12px;border-radius:8px;font-size:10px;font-weight:600;text-align:center;min-width:110px;max-width:165px;line-height:1.35;white-space:normal}
+    .br-pill.yes{background:#ECFDF5;border:2px solid #34D399;color:#065F46}
+    .br-pill.no{background:#F8FAFC;border:1px solid #E2E8F0;color:#94A3B8;font-weight:500}
+    .br-out{font-size:8.5px;color:#94A3B8;margin-top:3px;text-align:center;max-width:150px;line-height:1.35}
+    .br-lvl{display:inline-block;padding:1px 5px;border-radius:3px;font-size:8px;font-weight:700;color:#FFF;margin-left:3px;vertical-align:1px}
+    .br-cont{font-size:8px;color:#34D399;font-weight:700;margin-top:3px;letter-spacing:.3px}
+
+    /* ── Day divider ── */
+    .fday{display:flex;align-items:center;gap:14px;width:100%;max-width:480px;margin:6px 0;animation:fadeIn .3s ease-out both}
+    .fday-ln{flex:1;height:1px;background:linear-gradient(90deg,transparent,#94A3B8,transparent)}
+    .fday-lb{font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:1px;white-space:nowrap;background:#F8FAFC;padding:2px 10px;border-radius:6px;border:1px solid #E2E8F0}
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const{useState,useRef,useEffect}=React;
+
+    const tint=(hex,a)=>{const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return`rgba(${r},${g},${b},${a})`};
+
+    const LV={L1:{bg:'#94A3B8',lb:'L1'},L2:{bg:'#3B82F6',lb:'L2'},L3:{bg:'#F59E0B',lb:'L3'}};
+
+    const SC=[
+      {id:'happy',label:'Happy Path',icon:'✅',color:'#10B981',tag:'Player engages every round — the ideal journey',sum:'Receives R1 email → signs up → enriches every round to L3 → full tournament summary with quality trends and practice recs.',steps:[
+        {t:'entry',n:'R1 Email arrives',d:'Score + field position + hook to discover more',ic:'📧'},
+        {t:'action',n:'Sign up / Sign in',d:'Quick auth — Google, Apple, or email',ic:'🔑'},
+        {t:'action',n:'Import from Scoreboard',d:'Finds Round 1 data automatically',ic:'⬇️'},
+        {t:'screen',n:'Round 1 — Level 1',d:'Score, field position, hole-by-hole, streaks. Locked preview hints at more.',lv:'L1',cta:'Want to know how you got to 72?'},
+        {t:'decision',n:'Enrich Round 1?',opts:[
+          {lb:'5 Questions (~2 min)',out:'Quality ranges',go:'L2',y:1},
+          {lb:"I'll do this later",out:'Stays L1 → Home'},
+        ]},
+        {t:'action',n:'5 Question flow',d:'Chips → Putts → Fairways → Approach → GIR. ~75 seconds.',ic:'❓'},
+        {t:'screen',n:'Round 1 — Level 2',d:'Quality ranges, 3 helped / 3 hurt, round narrative.',lv:'L2',cta:'Want to know exactly what to work on?'},
+        {t:'decision',n:'Upgrade to Level 3?',opts:[
+          {lb:'Shot-by-shot (~8 min)',out:'Precise scores + practice recs',go:'L3',y:1},
+          {lb:"I'll do this later",out:'Stays L2 → Home'},
+        ]},
+        {t:'action',n:'Shot-by-shot entry',d:'Hole-by-hole. Map view as recall aid. Under 10 min.',ic:'⛳'},
+        {t:'screen',n:'Round 1 — Level 3',d:'Precise quality scores. Specific helped/hurt. Practice recs for R2.',lv:'L3'},
+        {t:'div',n:'Day 2'},
+        {t:'entry',n:'R2 Email arrives',d:'"Yesterday: 72. Today: 70. What changed?"',ic:'📧'},
+        {t:'screen',n:'Round 2 — Level 1',d:'Score + comparison to R1. Tournament strip shows both.',lv:'L1'},
+        {t:'decision',n:'A / B / C Choice',opts:[
+          {lb:'A: 5 Questions',out:'Quality ranges + ghost bar comparison',go:'L2',y:1},
+          {lb:'B: Shot-by-shot',out:'Skip to L3 (auto-generates L2)',go:'L3'},
+          {lb:'C: Later',out:'Stays L1'},
+        ]},
+        {t:'screen',n:'Round 2 — Level 2 → L3',d:'Quality ranges with ghost bar comparison to R1. Updated practice recs.',lv:'L3'},
+        {t:'div',n:'Day 3'},
+        {t:'entry',n:'R3 Email → same flow',d:'Full tournament quality trends across all 3 rounds.',ic:'📧'},
+        {t:'screen',n:'Tournament Summary',d:'Quality trends. "Biggest improvement: approach play."',lv:'L3',ic:'🏆'},
+        {t:'outcome',n:'App Tabs: Home · My Game · Training',d:'Scoring overview, quality profile, practice recommendations.',ic:'📱'},
+      ]},
+      {id:'skipR1',label:'Skip R1, engage R2',icon:'⏭️',color:'#F59E0B',tag:"Gareth's question — what if they ignore the first email?",sum:'Ignores R1. Gets R2 email, curiosity wins. First-time user mid-tournament with 2 rounds of score data.',steps:[
+        {t:'entry',n:'R1 Email arrives',d:"Player doesn't open or tap through.",ic:'📧'},
+        {t:'skip',n:'R1 ignored',d:'Round 1 sits in Scoreboard, unclaimed.'},
+        {t:'div',n:'Day 2'},
+        {t:'entry',n:'R2 Email — they tap through',d:'"You shot 70 at NCAA Regional."',ic:'📧'},
+        {t:'action',n:'Sign up + Import',d:'"Found 2 rounds." Import finds BOTH automatically.',ic:'⬇️',co:'Import finds ALL available rounds, not just the one clicked'},
+        {t:'screen',n:'Round 2 — Level 1',d:'Lands on R2 (the round they care about). Strip shows R1 too.',lv:'L1',co:'Land on most recent round — not R1'},
+        {t:'decision',n:'Enrich Round 2?',opts:[
+          {lb:'5 Questions',out:'Quality ranges (no comparison — R1 unenriched)',go:'L2',y:1},
+          {lb:'Shot-by-shot',out:'Full profile',go:'L3'},
+          {lb:'Later',out:'Stays L1'},
+        ]},
+        {t:'screen',n:'Round 2 — Level 2',d:'Quality ranges but NO ghost bar comparison. R1 is still just a score.',lv:'L2',co:'No quality comparison available — only score comparison works'},
+        {t:'nudge',n:'Nudge: "Enrich Round 1 too"',d:'"Answer 5 questions to see how your game changed."',ic:'💡'},
+        {t:'div',n:'Day 3'},
+        {t:'screen',n:'R3 → normal flow',d:'R3 email → L1 → enrich → L2 with ghost bar to R2.',lv:'L2'},
+        {t:'outcome',n:'Tournament Summary',d:'Score trends for all 3, quality for R2+R3. "Enrich R1 to complete."',ic:'🏆'},
+      ]},
+      {id:'skipAll',label:'Skip all, engage R3',icon:'⏭️',color:'#EC4899',tag:'Two emails ignored — curiosity wins on the last round',sum:'Ignores R1+R2. After R3, taps through. Import finds all 3 at L1. No quality comparison until they enrich.',steps:[
+        {t:'skip',n:'R1 email ignored',d:'No action.'},
+        {t:'skip',n:'R2 email ignored',d:'Still no engagement.'},
+        {t:'div',n:'Day 3'},
+        {t:'entry',n:'R3 Email — they tap through',d:'"You shot 68 — your best round of the week."',ic:'📧'},
+        {t:'action',n:'Sign up + Import',d:'"Found 3 rounds." All L1. Full scores immediately.',ic:'⬇️'},
+        {t:'screen',n:'Round 3 — Level 1',d:'Three score bubbles (72, 70, 68). "Trending down ↓ (good)."',lv:'L1',co:'Score comparison works. Quality comparison: nothing yet.'},
+        {t:'decision',n:'Enrich Round 3?',opts:[
+          {lb:'5 Questions',out:'Quality ranges — no comparison hook',go:'L2',y:1},
+          {lb:'Later',out:'Stays L1 with 3 rounds of scores'},
+        ]},
+        {t:'screen',n:'Round 3 — Level 2',d:'Quality ranges for R3. No ghost bar. Helped/hurt for R3 alone.',lv:'L2'},
+        {t:'nudge',n:'Nudge: "Enrich R1 & R2"',d:'"See how your game evolved across the tournament."',ic:'💡'},
+        {t:'outcome',n:'Tournament Summary (score-heavy)',d:'Score trend all 3. Quality for R3 only. "1 of 3 enriched."',ic:'🏆'},
+      ]},
+      {id:'skipMid',label:'Engage R1, skip R2, engage R3',icon:'🔀',color:'#8B5CF6',tag:'Enriched data on either side of a gap',sum:'R1 enriched. R2 ignored. R3 engaged. Quality comparison has a gap in the middle.',steps:[
+        {t:'screen',n:'Round 1 enriched (L2 or L3)',d:'Happy path for R1 — signed up, answered questions.',lv:'L2'},
+        {t:'div',n:'Day 2'},
+        {t:'skip',n:'R2 email — ignored',d:"R2 imports as L1 but player doesn't enrich."},
+        {t:'div',n:'Day 3'},
+        {t:'entry',n:'R3 Email — re-engages',d:'Player opens app. R3 at L1.',ic:'📧'},
+        {t:'screen',n:'Round 3 — Level 1',d:'R1 has enrichment badge, R2 plain, R3 current.',lv:'L1',co:'Score comparison: all 3. Quality comparison: R1 only'},
+        {t:'decision',n:'Enrich Round 3?',opts:[
+          {lb:'5 Questions',out:'Quality ranges + comparison to R1',go:'L2',y:1},
+        ]},
+        {t:'screen',n:'Round 3 — Level 2',d:'Ghost bars from R1 (not R2). "Approach improved since R1."',lv:'L2',co:'Ghost bars pull from most recent ENRICHED round'},
+        {t:'nudge',n:'Nudge: "Enrich Round 2"',d:'"Complete the tournament picture."',ic:'💡'},
+        {t:'outcome',n:'Tournament Summary (gap)',d:'Quality: R1 → dotted line → R3. Score: complete. "2 of 3 enriched."',ic:'🏆'},
+      ]},
+      {id:'late',label:'Late return (weeks later)',icon:'🕐',color:'#06B6D4',tag:'Never engaged — teammate mentions Clippd later',sum:'All emails ignored. Weeks later they sign up. Import finds full season. Everything L1 but immediately useful.',steps:[
+        {t:'skip',n:'R1 / R2 / R3 emails all ignored',d:'Tournament comes and goes.'},
+        {t:'div',n:'3 weeks later'},
+        {t:'entry',n:'Teammate mentions Clippd',d:'"Have you tried Clippd?" Player signs up.',ic:'💬'},
+        {t:'action',n:'Sign up + full season import',d:'"Found 21 rounds across 7 tournaments." All L1.',ic:'⬇️',co:'App feels immediately useful — full scoring history'},
+        {t:'screen',n:'Home — all Level 1',d:'Season avg, best/worst, sparkline. Every tournament listed.',lv:'L1'},
+        {t:'nudge',n:'"Pick a round to enrich"',d:'"Start with your most recent round."',ic:'👆'},
+        {t:'action',n:'Questions (with memory note)',d:'"This was a while ago — answers might be less precise."',ic:'❓',co:'Memory caveat for rounds older than ~2 weeks'},
+        {t:'screen',n:'Round — Level 2',d:'Quality ranges (slightly wider from less certain inputs).',lv:'L2'},
+        {t:'outcome',n:'Gradual enrichment',d:'Each round sharpens profile. Training tab gives recs.',ic:'📈'},
+      ]},
+      {id:'manual',label:'Manual round entry',icon:'✏️',color:'#10B981',tag:'Practice rounds not on Scoreboard',sum:'Player logs a practice round manually. Same L1→L2→L3 path works.',steps:[
+        {t:'entry',n:'"Add a round" CTA',d:'In My Game header or Home.',ic:'➕'},
+        {t:'action',n:'Manual entry form',d:'Date, course, total score. Optional hole-by-hole.',ic:'📝'},
+        {t:'decision',n:'Round type',opts:[
+          {lb:'Practice',out:'Tagged as practice',y:1},
+          {lb:'Tournament',out:'Appears in Tournaments tab'},
+          {lb:'Casual',out:'Tagged as casual'},
+        ]},
+        {t:'screen',n:'Manual round — Level 1',d:'Score stats. Tagged "Manual entry" vs "via Scoreboard".',lv:'L1'},
+        {t:'decision',n:'Enrich?',opts:[
+          {lb:'5 Questions',out:'Same flow works for any round',go:'L2',y:1},
+          {lb:'Shot-by-shot',out:'Full data entry',go:'L3'},
+        ]},
+        {t:'screen',n:'Manual round — Level 2 → L3',d:'Quality ranges or precise scores. Contributes to profile.',lv:'L2'},
+        {t:'outcome',n:'Contributes to profile',d:'Practice rounds build quality profile. NOT in Tournaments tab.',ic:'📊'},
+      ]},
+      {id:'summer',label:'Summer / off-season',icon:'☀️',color:'#F97316',tag:'Standalone rounds — no tournament context',sum:'Off-season casual rounds. No email triggers, no tournament grouping.',steps:[
+        {t:'entry',n:'Player opens app (off-season)',d:'No tournament. They want to log a round.',ic:'📱'},
+        {t:'screen',n:'Home — season history',d:'"Fall season: 21 rounds, avg 72.3." Add round CTA prominent.',lv:'L1'},
+        {t:'action',n:'Add round manually',d:'Date, course, score. Tagged Practice or Casual.',ic:'➕'},
+        {t:'screen',n:'Standalone — Level 1',d:'"Your last round was 74, two weeks ago." Cross-round comparison.',lv:'L1'},
+        {t:'decision',n:'Enrich?',opts:[
+          {lb:'5 Questions',out:'Quality ranges',go:'L2',y:1},
+          {lb:'Later',out:'Stays L1'},
+        ]},
+        {t:'screen',n:'Standalone — Level 2',d:'Quality ranges. Ghost bar works against previous enriched rounds.',lv:'L2'},
+        {t:'outcome',n:'Profile builds over summer',d:'Training tab stays relevant year-round.',ic:'📈'},
+      ]},
+      {id:'partial',label:'Partial completion',icon:'⏸️',color:'#EF4444',tag:"Started but didn't finish — abandon & resume",sum:'Starts question flow, abandons mid-way. App saves progress, offers to resume.',steps:[
+        {t:'screen',n:'Round at Level 1',d:'Player taps "Answer 5 questions."',lv:'L1'},
+        {t:'action',n:'Answers 3 of 5 questions',d:'Chips ✓ Putts ✓ Fairways ✓ — then closes app.',ic:'❓'},
+        {t:'skip',n:'App closed — partial saved',d:'Answers saved. Round stays L1 (needs all 5).'},
+        {t:'div',n:'Later'},
+        {t:'entry',n:'Returns to app',d:'Home shows "Continue" prompt.',ic:'🔄'},
+        {t:'nudge',n:'"Pick up where you left off?"',d:'"2 more questions to go." Progress: 3/5.',ic:'▶️'},
+        {t:'action',n:'Resume at Q4 → finishes',d:'Approach hits + GIR. Done in 30 seconds.',ic:'❓'},
+        {t:'screen',n:'Level 2 unlocked',d:'Quality ranges generated. Normal L2 from here.',lv:'L2'},
+        {t:'div',n:'Shot-by-shot partial'},
+        {t:'action',n:'Enters holes 1–9, quits',d:'At L2, starts shot-by-shot. Gets halfway.',ic:'⛳'},
+        {t:'skip',n:'Progress saved at 9/18',d:'Round stays L2. L2 data still usable.'},
+        {t:'nudge',n:'"Continue from hole 10?"',d:'Progress: 9/18 holes.',ic:'▶️'},
+        {t:'screen',n:'Level 3 unlocked',d:'All 18 → precise quality scores + practice recs.',lv:'L3'},
+      ]},
+    ];
+
+    /* ── Icons map ── */
+    const IC={entry:'📧',action:'⚙️',screen:'📱',decision:'🔀',skip:'⏭️',nudge:'💡',outcome:'🎯'};
+
+    /* ── Flow Node ── */
+    const FN=({s,showD})=>{
+      const lv=s.lv?LV[s.lv]:null;
+      const ic=s.ic||IC[s.t]||'📱';
+      return(
+        <div className={`fn fn-${s.t}`} data-level={s.lv||''}>
+          <span className="fn-ic">{ic}</span>
+          <div className="fn-body">
+            <div className="fn-t">{s.n}</div>
+            {s.d&&<div className={`fn-d${showD?'':' hide'}`}>{s.d}</div>}
+            {s.cta&&showD&&<div className="fn-cta">↳ "{s.cta}"</div>}
+            {s.co&&showD&&<div className="fn-callout">⚠️ {s.co}</div>}
+          </div>
+          {lv&&<span className="fn-badge" style={{background:lv.bg}}>{lv.lb}</span>}
+        </div>
+      );
+    };
+
+    /* ── Connector ── */
+    const CN=({dash,purple})=>(
+      <div className="conn">
+        <div className={`conn-line${dash?' dash':''}${purple?' purple':''}`}></div>
+        <div className={`conn-arr${purple?' purple':''}`}></div>
+      </div>
+    );
+
+    /* ── Day Divider ── */
+    const DV=({n})=>(
+      <div className="fday">
+        <div className="fday-ln"></div>
+        <span className="fday-lb">{n}</span>
+        <div className="fday-ln"></div>
+      </div>
+    );
+
+    /* ── Decision Branch ── */
+    const BR=({s,showD})=>(
+      <div className="branch">
+        <div className={`fn fn-decision`}>
+          <span className="fn-ic">🔀</span>
+          <div className="fn-body"><div className="fn-t">{s.n}</div></div>
+        </div>
+        <div className="conn"><div className="conn-line short purple"></div></div>
+        <div className="br-row">
+          {s.opts.map((o,i)=>(
+            <div key={i} className="br-col">
+              <div className={`br-pill ${o.y?'yes':'no'}`}>
+                {o.y&&'✓ '}{o.lb}
+                {o.go&&<span className="br-lvl" style={{background:LV[o.go]?.bg}}>{o.go}</span>}
+              </div>
+              {!o.y&&showD&&<div className="br-out">→ {o.out}</div>}
+              {o.y&&<div className="br-cont">continues ↓</div>}
+            </div>
+          ))}
+        </div>
+        <div className="conn" style={{marginTop:2}}>
+          <div className="conn-line" style={{height:16,background:'#34D399'}}></div>
+          <div className="conn-arr" style={{borderTopColor:'#34D399'}}></div>
+        </div>
+      </div>
+    );
+
+    /* ── App ── */
+    const App=()=>{
+      const[activeId,setActiveId]=useState('happy');
+      const[showD,setShowD]=useState(true);
+      const ref=useRef(null);
+      const active=SC.find(s=>s.id===activeId);
+
+      useEffect(()=>{if(ref.current)ref.current.scrollTop=0},[activeId]);
+
+      return(
+        <div className="layout">
+          <div className="hdr">
+            <div>
+              <h1>Clippd Lite — Decision Tree</h1>
+              <p>Select a scenario to trace the user flow</p>
+            </div>
+            <div style={{display:'flex',alignItems:'center'}}>
+              <div className="legend">
+                <div className="legend-i"><div className="legend-d" style={{background:'#94A3B8'}}></div>L1 Score</div>
+                <div className="legend-i"><div className="legend-d" style={{background:'#3B82F6'}}></div>L2 Quality</div>
+                <div className="legend-i"><div className="legend-d" style={{background:'#F59E0B'}}></div>L3 Full</div>
+              </div>
+              <button className={`tog-btn${showD?' on':''}`} onClick={()=>setShowD(!showD)}>
+                {showD?'◉ Details on':'○ Details off'}
+              </button>
+            </div>
+          </div>
+          <div className="bod">
+            <div className="side">
+              <div className="side-lbl">Scenarios</div>
+              {SC.map(s=>(
+                <button key={s.id} className={`sbtn${s.id===activeId?' on':''}`}
+                  style={{'--sc':s.color,...(s.id===activeId?{background:tint(s.color,.06)}:{})}}
+                  onClick={()=>setActiveId(s.id)}>
+                  <div className="rw"><span className="ic">{s.icon}</span><span className="lb">{s.label}</span></div>
+                  <div className="tl">{s.tag}</div>
+                </button>
+              ))}
+              <div className="oqs">
+                <h4>Open Questions for Gareth</h4>
+                {['Scoreboard for non-tournament rounds?','Clippd Lite ↔ existing accounts?','Support 9-hole rounds in V1?','App poll for new rounds vs email only?','36-hole days — one or two emails?','Manual tournament grouping in V1?','Memory cutoff for shot-by-shot?'].map((q,i)=>(
+                  <p key={i}>{i+1}. {q}</p>
+                ))}
+              </div>
+            </div>
+            <div className="canvas" ref={ref}>
+              {active&&(
+                <div className="flow" key={active.id}>
+                  <div className="sc-ban" style={{borderColor:tint(active.color,.3),background:tint(active.color,.04)}}>
+                    <span className="ic">{active.icon}</span>
+                    <div>
+                      <h2 style={{color:active.color}}>{active.label}</h2>
+                      <p>{active.sum}</p>
+                    </div>
+                  </div>
+                  {active.steps.map((s,i)=>{
+                    const prev=i>0?active.steps[i-1]:null;
+                    const showConn=i>0&&s.t!=='div'&&(prev?.t!=='decision');
+                    const isDash=prev?.t==='skip';
+                    return(
+                      <React.Fragment key={`${active.id}-${i}`}>
+                        {showConn&&<CN dash={isDash}/>}
+                        {s.t==='div'?<DV n={s.n}/>:s.t==='decision'?<BR s={s} showD={showD}/>:<FN s={s} showD={showD}/>}
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+  </script>
+</body>
+</html>
